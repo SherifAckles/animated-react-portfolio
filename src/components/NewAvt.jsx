@@ -1,8 +1,9 @@
 // Avatar component renders a 3D avatar model with animations.
-import React from "react";
-import { useFBX, useGLTF } from "@react-three/drei";
+import React, { useRef } from "react";
+import { useAnimations, useFBX, useGLTF } from "@react-three/drei";
 
 export function Avatar(props) {
+  const group = useRef();
   const { nodes, materials } = useGLTF("models/newAvt.glb");
 
   // Load animations
@@ -13,6 +14,9 @@ export function Avatar(props) {
   typingAnimation.map((animation, index) => {
     console.log(animation);
   });
+  //to control and manipulate animations
+  const { actions } = useAnimations(typingAnimation, group);
+
   // Render the 3D model
   return (
     <group {...props} dispose={null}>
@@ -77,7 +81,7 @@ export function Avatar(props) {
     </group>
   );
 }
-// Preloading the 3D model file helps improve the performance of the application because it allows 
+// Preloading the 3D model file helps improve the performance of the application because it allows
 //the model to be loaded and cached in the browser's memory ahead of time. This way,
 // when the component using the model is rendered, the model can be retrieved quickly from the cache
 // instead of having to wait for it to be loaded from the network.This can result in smoother and
