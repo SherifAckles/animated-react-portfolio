@@ -1,25 +1,68 @@
 // Avatar component renders a 3D avatar model with animations.
-import React, { useRef } from "react";
+import React, { useRef, useEffect } from "react";
 import { useAnimations, useFBX, useGLTF } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useControls } from "leva";
+import * as THREE from "three";
 
 export function Avatar(props) {
+  const { animation } = props;
+  const { headFollow, cursorFollow, wireframe } = useControls({
+    headFollow: false,
+    cursorFollow: false,
+    wireframe: false,
+  });
   const group = useRef();
   const { nodes, materials } = useGLTF("models/newAvt.glb");
 
   // Load animations
   const { animations: typingAnimation } = useFBX("animations/Typing.fbx");
+  const { animations: standingAnimation } = useFBX(
+    "animations/Standing Idle.fbx"
+  );
+  const { animations: fallingAnimation } = useFBX(
+    "animations/Falling Idle.fbx"
+  );
 
-  // console.log(Me typing) and Customize animations
-  typingAnimation[0].name = "AcklesTyping";
-  typingAnimation.map((animation, index) => {
-    console.log(animation);
-  });
+  typingAnimation[0].name = "Typing";
+  standingAnimation[0].name = "Standing";
+  fallingAnimation[0].name = "Falling";
+
   //to control and manipulate animations
-  const { actions } = useAnimations(typingAnimation, group);
+  const { actions } = useAnimations(
+    [typingAnimation[0], standingAnimation[0], fallingAnimation[0]],
+    group
+  );
+
+  // updating the Neck rotation dynamically based on the position of the camera
+  useFrame((state) => {
+    if (headFollow) {
+      group.current.getObjectByName("Head").lookAt(state.camera.position);
+    }
+
+    if (cursorFollow) {
+      const target = new THREE.Vector3(state.mouse.x, state.mouse.y, 1);
+      group.current.getObjectByName("Spine2").lookAt(target);
+    }
+  });
+
+  useEffect(() => {
+    //reset then play the animation
+    actions[animation].reset().fadeIn(0.5).play();
+    return () => {
+      actions[animation].reset().fadeOut(0.5);
+    };
+  }, [animation]);
+
+  useEffect(() => {
+    Object.values(materials).map((material) => {
+      material.wireframe = wireframe;
+    });
+  }, [wireframe]);
 
   // Render the 3D model
   return (
-    <group {...props} dispose={null}>
+    <group {...props} ref={group} dispose={null}>
       <primitive object={nodes.Hips} />
       <skinnedMesh
         geometry={nodes.Wolf3D_Body.geometry}
